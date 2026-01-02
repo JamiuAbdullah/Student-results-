@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Student Result Portal</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: #1e88e5;
+      color: white;
+      padding: 15px;
+      text-align: center;
+    }
+    .container {
+      max-width: 800px;
+      margin: 30px auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h2 {
+      color: #1e88e5;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+    input, button {
+      padding: 10px;
+      width: 100%;
+      margin-top: 5px;
+    }
+    button {
+      background: #1e88e5;
+      color: white;
+      border: none;
+      cursor: pointer;
+      margin-top: 15px;
+    }
+    button:hover {
+      background: #1565c0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    table, th, td {
+      border: 1px solid #ccc;
+    }
+    th, td {
+      padding: 10px;
+      text-align: center;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>School Result Portal</h1>
+</header>
+
+<div class="container">
+  <h2>Check Result</h2>
+  <label>Student ID</label>
+  <input type="text" id="searchId" placeholder="Enter Student ID" />
+  <button onclick="checkResult()">Check Result</button>
+
+  <table id="resultTable" class="hidden">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Math</th>
+        <th>English</th>
+        <th>Science</th>
+        <th>Total</th>
+      </tr>
+    </thead>
+    <tbody id="resultBody"></tbody>
+  </table>
+</div>
+
+<script>
+  const results = [
+    { id: "001", name: "Abdullah", math: 78, english: 85, science: 90 },
+    { id: "002", name: "Amina", math: 88, english: 79, science: 84 },
+    { id: "003", name: "Sadiq", math: 65, english: 70, science: 72 }
+  ];
+
+  function checkResult() {
+    const id = document.getElementById("searchId").value;
+    const student = results.find(s => s.id === id);
+
+    if (!student) {
+      alert("Result not found");
+      return;
+    }
+
+    const total = student.math + student.english + student.science;
+
+    document.getElementById("resultBody").innerHTML = `
+      <tr>
+        <td>${student.name}</td>
+        <td>${student.math}</td>
+        <td>${student.english}</td>
+        <td>${student.science}</td>
+        <td>${total}</td>
+      </tr>
+    `;
+
+    document.getElementById("resultTable").classList.remove("hidden");
+  }
+</script>
+
+</body>
+</html>
