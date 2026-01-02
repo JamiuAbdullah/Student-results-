@@ -93,7 +93,52 @@ if menu == "Check Result":
                 st.error("❌ Result not found")
             else:
                 st.success("✅ Result found")
-                st.table(result)
+
+                # -------------------------
+                # STUDENT PROFILE (VERTICAL)
+                # -------------------------
+                profile_fields = [
+                    "student id",
+                    "full_name",
+                    "class",
+                    "arm",
+                    "gender",
+                    "date_of_birth"
+                ]
+
+                profile = result[profile_fields].iloc[0].to_frame()
+                profile.columns = ["Value"]
+
+                # Make labels nice
+                profile.index = (
+                    profile.index
+                    .str.replace("_", " ")
+                    .str.title()
+                )
+
+                st.subheader("👤 Student Profile")
+                st.table(profile)
+
+                # -------------------------
+                # ACADEMIC RESULTS
+                # -------------------------
+                score_fields = [
+                    "maths",
+                    "english",
+                    "physics",
+                    "chemistry",
+                    "biology",
+                    "total",
+                    "average",
+                    "grade"
+                ]
+
+                scores = result[score_fields].iloc[0].to_frame()
+                scores.columns = ["Score"]
+                scores.index = scores.index.str.title()
+
+                st.subheader("📊 Academic Performance")
+                st.table(scores)
 
 # -------------------------
 # ADD RESULT
@@ -160,5 +205,6 @@ elif menu == "View All Results":
 st.markdown("---")
 st.caption("© 2026 School Result Portal | Built with Streamlit")
     
+
 
 
