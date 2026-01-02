@@ -31,11 +31,20 @@ def load_data():
         ]
         df = pd.DataFrame(columns=columns)
 
+    # -------------------------
+    # CLEAN & NORMALIZE COLUMNS
+    # -------------------------
     df.columns = (
-        df.columns.str.strip()
+        df.columns
+        .astype(str)
+        .str.strip()
         .str.replace("\u00A0", "")
         .str.lower()
     )
+
+    # 🔧 FIX: student_id → student id
+    if "student_id" in df.columns:
+        df.rename(columns={"student_id": "student id"}, inplace=True)
 
     return df
 
@@ -79,7 +88,8 @@ if menu == "Check Result":
     student_id_input = st.text_input("Enter Student ID").strip().lower()
 
     if st.button("Check Result"):
-        result = df[df["student id"].astype(str).str.lower() == student_id_input]
+        student_ids = df["student id"].astype(str).str.strip().str.lower()
+        result = df[student_ids == student_id_input]
 
         if result.empty:
             st.error("❌ Result not found")
@@ -116,7 +126,7 @@ if menu == "Check Result":
 elif menu == "Add Result":
     st.subheader("➕ Add New Student Result")
 
-    with st.form("add_form"):
+    with st.form("add_result_form"):
         student_id = st.text_input("Student ID")
         full_name = st.text_input("Full Name")
         student_class = st.text_input("Class")
@@ -164,9 +174,9 @@ elif menu == "Add Result":
 elif menu == "Update Result":
     st.subheader("✏️ Update Student Result")
 
-    student_id = st.text_input("Enter Student ID").strip().lower()
-
-    result = df[df["student id"].astype(str).str.lower() == student_id]
+    student_id_input = st.text_input("Enter Student ID").strip().lower()
+    student_ids = df["student id"].astype(str).str.strip().str.lower()
+    result = df[student_ids == student_id_input]
 
     if not result.empty:
         student = result.iloc[0]
@@ -203,24 +213,31 @@ elif menu == "Update Result":
 elif menu == "Delete Result":
     st.subheader("🗑 Delete Student Result")
 
-    student_id = st.text_input("Enter Student ID to delete").strip().lower()
+    student_id_input = st.text_input("Enter Student ID to delete").strip().lower()
 
     if st.button("Delete"):
-        if student_id in df["student id"].astype(str).str.lower().values:
-            df = df[df["student id"].astype(str).str.lower() != student_id]
+        student_ids = df["student id"].astype(str).str.strip().str.lower()
+
+        if student_id_input in student_ids.values:
+            df = df[student_ids != student_id_input]
             save_data(df)
             st.success("✅ Student result deleted successfully")
         else:
             st.error("❌ Student ID not found")
 
 # -------------------------
-# VIEW ALL
+# VIEW ALL RESULTS
 # -------------------------
 elif menu == "View All Results":
     st.subheader("📊 All Students Results")
-    st.dataframe(df, use_container_width=True)
+
+    if df.empty:
+        st.info("No results available yet")
+    else:
+        st.dataframe(df, use_container_width=True)
 
 st.markdown("---")
 st.caption("© 2026 School Result Portal | Built with Streamlit")
-  
+
+
 
