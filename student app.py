@@ -81,13 +81,19 @@ if menu == "Check Result":
         if student_id_input == "":
             st.warning("Please enter a Student ID")
         else:
+            # Normalize column names in result
+            df.columns = df.columns.str.strip().str.lower().str.replace("\u00A0", "")  # remove non-breaking spaces
+
+            # Fix student_id column
+            if "student_id" in df.columns:
+                df.rename(columns={"student_id": "student id"}, inplace=True)
+
             if "student id" not in df.columns:
                 st.error("❌ Student ID column not found in the data.")
                 st.stop()
 
-            result = df[
-                df["student id"].astype(str).str.lower() == student_id_input
-            ]
+            # Filter the student
+            result = df[df["student id"].astype(str).str.lower() == student_id_input]
 
             if result.empty:
                 st.error("❌ Result not found")
@@ -95,7 +101,7 @@ if menu == "Check Result":
                 st.success("✅ Result found")
 
                 # -------------------------
-                # STUDENT PROFILE (VERTICAL)
+                # STUDENT PROFILE
                 # -------------------------
                 profile_fields = [
                     "student id",
@@ -105,24 +111,19 @@ if menu == "Check Result":
                     "gender",
                     "date_of_birth"
                 ]
+                profile_fields = [f for f in profile_fields if f in result.columns]
 
-                profile = result[profile_fields].iloc[0].to_frame()
-                profile.columns = ["Value"]
-
-                # Make labels nice
-                profile.index = (
-                    profile.index
-                    .str.replace("_", " ")
-                    .str.title()
-                )
-
-                st.subheader("👤 Student Profile")
-                st.table(profile)
+                if profile_fields:
+                    profile = result[profile_fields].iloc[0].to_frame()
+                    profile.columns = ["Value"]
+                    profile.index = profile.index.str.replace("_", " ").str.title()
+                    st.subheader("👤 Student Profile")
+                    st.table(profile)
 
                 # -------------------------
-                # ACADEMIC RESULTS
+                # ACADEMIC PERFORMANCE
                 # -------------------------
-                score_fields = [
+                all_score_fields = [
                     "maths",
                     "english",
                     "physics",
@@ -132,13 +133,16 @@ if menu == "Check Result":
                     "average",
                     "grade"
                 ]
+                score_fields = [col for col in all_score_fields if col in result.columns]
 
-                scores = result[score_fields].iloc[0].to_frame()
-                scores.columns = ["Score"]
-                scores.index = scores.index.str.title()
-
-                st.subheader("📊 Academic Performance")
-                st.table(scores)
+                if score_fields:
+                    scores = result[score_fields].iloc[0].to_frame()
+                    scores.columns = ["Score"]
+                    scores.index = scores.index.str.replace("_", " ").str.title()
+                    st.subheader("📊 Academic Performance")
+                    st.table(scores)
+                else:
+                    st.warning("No academic score columns found for this student.")
 
 # -------------------------
 # ADD RESULT
@@ -205,6 +209,7 @@ elif menu == "View All Results":
 st.markdown("---")
 st.caption("© 2026 School Result Portal | Built with Streamlit")
     
+
 
 
 
