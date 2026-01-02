@@ -31,24 +31,11 @@ def load_data():
         ]
         df = pd.DataFrame(columns=columns)
 
-    # -------------------------
-    # CLEAN COLUMN NAMES
-    # -------------------------
     df.columns = (
-        df.columns
-        .str.strip()               # remove normal spaces
-        .str.replace("\u00A0", "") # remove non-breaking spaces
-        .str.lower()               # lowercase
+        df.columns.str.strip()
+        .str.replace("\u00A0", "")
+        .str.lower()
     )
-
-    # Rename student_id if exists
-    if "student_id" in df.columns:
-        df.rename(columns={"student_id": "student id"}, inplace=True)
-
-    # Remove duplicate or misaligned name columns
-    if "full_name" in df.columns and "student name" in df.columns:
-        df["full_name"] = df["full_name"].fillna(df["student name"])
-        df.drop(columns=["student name"], inplace=True)
 
     return df
 
@@ -80,7 +67,7 @@ st.write("Check and manage students' academic results")
 
 menu = st.sidebar.selectbox(
     "Navigation",
-    ["Check Result", "Add Result", "View All Results"]
+    ["Check Result", "Add Result", "Update Result", "Delete Result", "View All Results"]
 )
 
 # -------------------------
@@ -92,66 +79,36 @@ if menu == "Check Result":
     student_id_input = st.text_input("Enter Student ID").strip().lower()
 
     if st.button("Check Result"):
-        if student_id_input == "":
-            st.warning("Please enter a Student ID")
+        result = df[df["student id"].astype(str).str.lower() == student_id_input]
+
+        if result.empty:
+            st.error("❌ Result not found")
         else:
-            if "student id" not in df.columns:
-                st.error("❌ Student ID column not found in the data.")
-                st.stop()
+            st.success("✅ Result found")
 
-            result = df[df["student id"].astype(str).str.lower() == student_id_input]
+            profile_fields = [
+                "student id", "full_name", "class", "arm",
+                "gender", "date_of_birth"
+            ]
 
-            if result.empty:
-                st.error("❌ Result not found")
-            else:
-                st.success("✅ Result found")
+            profile = result[profile_fields].iloc[0].to_frame()
+            profile.columns = ["Value"]
+            profile.index = profile.index.str.replace("_", " ").str.title()
+            st.subheader("👤 Student Profile")
+            st.table(profile)
 
-                # -------------------------
-                # STUDENT PROFILE
-                # -------------------------
-                profile_fields = [
-                    "student id",
-                    "full_name",
-                    "class",
-                    "arm",
-                    "gender",
-                    "date_of_birth"
-                ]
-                profile_fields = [f for f in profile_fields if f in result.columns]
+            score_fields = [
+                "maths", "english", "physics",
+                "chemistry", "biology",
+                "total", "average", "grade"
+            ]
 
-                if profile_fields:
-                    profile = result[profile_fields].iloc[0].to_frame()
-                    profile.columns = ["Value"]
-                    profile.index = profile.index.str.replace("_", " ").str.title()
-                    st.subheader("👤 Student Profile")
-                    st.table(profile)
-
-                # -------------------------
-                # ACADEMIC PERFORMANCE
-                # -------------------------
-                all_score_fields = [
-                    "maths",
-                    "english",
-                    "physics",
-                    "chemistry",
-                    "biology",
-                    "total",
-                    "average",
-                    "grade"
-                ]
-                score_fields = [col for col in all_score_fields if col in result.columns]
-
-                # Fill missing numeric scores with 0
-                if score_fields:
-                    result[score_fields] = result[score_fields].fillna(0)
-
-                    scores = result[score_fields].iloc[0].to_frame()
-                    scores.columns = ["Score"]
-                    scores.index = scores.index.str.replace("_", " ").str.title()
-                    st.subheader("📊 Academic Performance")
-                    st.table(scores)
-                else:
-                    st.warning("No academic score columns found for this student.")
+            result[score_fields] = result[score_fields].fillna(0)
+            scores = result[score_fields].iloc[0].to_frame()
+            scores.columns = ["Score"]
+            scores.index = scores.index.str.title()
+            st.subheader("📊 Academic Performance")
+            st.table(scores)
 
 # -------------------------
 # ADD RESULT
@@ -159,7 +116,7 @@ if menu == "Check Result":
 elif menu == "Add Result":
     st.subheader("➕ Add New Student Result")
 
-    with st.form("add_result_form"):
+    with st.form("add_form"):
         student_id = st.text_input("Student ID")
         full_name = st.text_input("Full Name")
         student_class = st.text_input("Class")
@@ -167,64 +124,103 @@ elif menu == "Add Result":
         gender = st.selectbox("Gender", ["Male", "Female"])
         date_of_birth = st.date_input("Date of Birth")
 
-        col1, col2 = st.columns(2)
-
-        with col1:
-            maths = st.number_input("Maths", 0, 100)
-            english = st.number_input("English", 0, 100)
-            physics = st.number_input("Physics", 0, 100)
-
-        with col2:
-            chemistry = st.number_input("Chemistry", 0, 100)
-            biology = st.number_input("Biology", 0, 100)
+        maths = st.number_input("Maths", 0, 100)
+        english = st.number_input("English", 0, 100)
+        physics = st.number_input("Physics", 0, 100)
+        chemistry = st.number_input("Chemistry", 0, 100)
+        biology = st.number_input("Biology", 0, 100)
 
         submit = st.form_submit_button("Save Result")
 
     if submit:
-        if student_id == "" or full_name == "" or student_class == "":
-            st.error("❌ Please fill all required fields")
-        else:
+        total = maths + english + physics + chemistry + biology
+        average = round(total / 5, 2)
+        grade = calculate_grade(average)
+
+        new_data = {
+            "student id": student_id,
+            "full_name": full_name,
+            "class": student_class,
+            "arm": arm,
+            "gender": gender,
+            "date_of_birth": date_of_birth,
+            "maths": maths,
+            "english": english,
+            "physics": physics,
+            "chemistry": chemistry,
+            "biology": biology,
+            "total": total,
+            "average": average,
+            "grade": grade
+        }
+
+        df = pd.concat([df, pd.DataFrame([new_data])], ignore_index=True)
+        save_data(df)
+        st.success("✅ Result added successfully")
+
+# -------------------------
+# UPDATE RESULT
+# -------------------------
+elif menu == "Update Result":
+    st.subheader("✏️ Update Student Result")
+
+    student_id = st.text_input("Enter Student ID").strip().lower()
+
+    result = df[df["student id"].astype(str).str.lower() == student_id]
+
+    if not result.empty:
+        student = result.iloc[0]
+
+        maths = st.number_input("Maths", 0, 100, int(student["maths"]))
+        english = st.number_input("English", 0, 100, int(student["english"]))
+        physics = st.number_input("Physics", 0, 100, int(student["physics"]))
+        chemistry = st.number_input("Chemistry", 0, 100, int(student["chemistry"]))
+        biology = st.number_input("Biology", 0, 100, int(student["biology"]))
+
+        if st.button("Update Result"):
             total = maths + english + physics + chemistry + biology
             average = round(total / 5, 2)
             grade = calculate_grade(average)
 
-            new_data = {
-                "student id": student_id,
-                "full_name": full_name,
-                "class": student_class,
-                "arm": arm,
-                "gender": gender,
-                "date_of_birth": date_of_birth,
-                "maths": maths,
-                "english": english,
-                "physics": physics,
-                "chemistry": chemistry,
-                "biology": biology,
-                "total": total,
-                "average": average,
-                "grade": grade
-            }
+            df.loc[result.index, [
+                "maths", "english", "physics",
+                "chemistry", "biology",
+                "total", "average", "grade"
+            ]] = [
+                maths, english, physics,
+                chemistry, biology,
+                total, average, grade
+            ]
 
-            df = pd.concat([df, pd.DataFrame([new_data])], ignore_index=True)
             save_data(df)
-
-            st.success("✅ Result added successfully")
+            st.success("✅ Result updated successfully")
+    else:
+        st.info("Enter a valid Student ID to update")
 
 # -------------------------
-# VIEW ALL RESULTS
+# DELETE RESULT
+# -------------------------
+elif menu == "Delete Result":
+    st.subheader("🗑 Delete Student Result")
+
+    student_id = st.text_input("Enter Student ID to delete").strip().lower()
+
+    if st.button("Delete"):
+        if student_id in df["student id"].astype(str).str.lower().values:
+            df = df[df["student id"].astype(str).str.lower() != student_id]
+            save_data(df)
+            st.success("✅ Student result deleted successfully")
+        else:
+            st.error("❌ Student ID not found")
+
+# -------------------------
+# VIEW ALL
 # -------------------------
 elif menu == "View All Results":
     st.subheader("📊 All Students Results")
-
-    if df.empty:
-        st.info("No results available yet")
-    else:
-        st.dataframe(df, use_container_width=True)
+    st.dataframe(df, use_container_width=True)
 
 st.markdown("---")
 st.caption("© 2026 School Result Portal | Built with Streamlit")
-
-
-
-
+  
 
