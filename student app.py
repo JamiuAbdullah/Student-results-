@@ -1,6 +1,6 @@
+import streamlit as st
 import pandas as pd
 import os
-import streamlit as st
 
 st.set_page_config(
     page_title="School Result Portal",
@@ -11,23 +11,23 @@ st.set_page_config(
 FILE_PATH = "School_Result_Portal_1000plus.xlsx"
 
 # -------------------------
-# Load and save functions
+# Load and Save Functions
 # -------------------------
 def load_data():
     if os.path.exists(FILE_PATH):
         try:
             return pd.read_excel(FILE_PATH)
         except ImportError:
-            st.error("Missing library `openpyxl`. Add it to requirements.txt and redeploy.")
+            st.error("❌ Missing library `openpyxl`. Add it to requirements.txt and redeploy.")
             st.stop()
         except Exception as e:
-            st.error(f"Error loading Excel file: {e}")
+            st.error(f"❌ Error loading Excel file: {e}")
             st.stop()
     else:
         columns = [
-            "Student ID", "Student Name", "Class",
-            "Maths", "English", "Physics", "Chemistry", "Biology",
-            "Total", "Average", "Grade"
+            "student id", "student name", "class",
+            "maths", "english", "physics", "chemistry", "biology",
+            "total", "average", "grade"
         ]
         return pd.DataFrame(columns=columns)
 
@@ -47,15 +47,19 @@ def calculate_grade(avg):
         return "F"
 
 # -------------------------
-# Load data
+# Load Data
 # -------------------------
 df = load_data()
 
-# Normalize column names: remove spaces and lowercase
+# 🔧 NORMALIZE & FIX COLUMN NAME
 df.columns = df.columns.str.strip().str.lower()
 
+# 🔥 FIX: rename student_id → student id
+if "student_id" in df.columns:
+    df.rename(columns={"student_id": "student id"}, inplace=True)
+
 # -------------------------
-# App UI
+# UI
 # -------------------------
 st.title("🎓 School Result Portal")
 st.write("Check and manage students' academic results")
@@ -66,7 +70,7 @@ menu = st.sidebar.selectbox(
 )
 
 # -------------------------
-# Check Result
+# CHECK RESULT
 # -------------------------
 if menu == "Check Result":
     st.subheader("🔍 Check Student Result")
@@ -77,20 +81,22 @@ if menu == "Check Result":
         if student_id_input == "":
             st.warning("Please enter a Student ID")
         else:
-            # Check if 'student id' column exists
-            if "student id" in df.columns:
-                result = df[df["student id"].astype(str).str.lower() == student_id_input]
+            if "student id" not in df.columns:
+                st.error("❌ Student ID column not found in the data.")
+                st.stop()
 
-                if result.empty:
-                    st.error("❌ Result not found")
-                else:
-                    st.success("✅ Result found")
-                    st.table(result)
+            result = df[
+                df["student id"].astype(str).str.lower() == student_id_input
+            ]
+
+            if result.empty:
+                st.error("❌ Result not found")
             else:
-                st.error("Error: 'Student ID' column not found in the data.")
+                st.success("✅ Result found")
+                st.table(result)
 
 # -------------------------
-# Add Result
+# ADD RESULT
 # -------------------------
 elif menu == "Add Result":
     st.subheader("➕ Add New Student Result")
@@ -122,17 +128,17 @@ elif menu == "Add Result":
             grade = calculate_grade(average)
 
             new_data = {
-                "Student ID": student_id,
-                "Student Name": student_name,
-                "Class": student_class,
-                "Maths": maths,
-                "English": english,
-                "Physics": physics,
-                "Chemistry": chemistry,
-                "Biology": biology,
-                "Total": total,
-                "Average": average,
-                "Grade": grade
+                "student id": student_id,
+                "student name": student_name,
+                "class": student_class,
+                "maths": maths,
+                "english": english,
+                "physics": physics,
+                "chemistry": chemistry,
+                "biology": biology,
+                "total": total,
+                "average": average,
+                "grade": grade
             }
 
             df = pd.concat([df, pd.DataFrame([new_data])], ignore_index=True)
@@ -141,7 +147,7 @@ elif menu == "Add Result":
             st.success("✅ Result added successfully")
 
 # -------------------------
-# View All Results
+# VIEW ALL RESULTS
 # -------------------------
 elif menu == "View All Results":
     st.subheader("📊 All Students Results")
@@ -153,4 +159,6 @@ elif menu == "View All Results":
 
 st.markdown("---")
 st.caption("© 2026 School Result Portal | Built with Streamlit")
+    
+
 
