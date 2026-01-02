@@ -31,9 +31,7 @@ def load_data():
         ]
         df = pd.DataFrame(columns=columns)
 
-    # -------------------------
-    # CLEAN & NORMALIZE COLUMNS
-    # -------------------------
+    # Clean column names
     df.columns = (
         df.columns
         .astype(str)
@@ -42,7 +40,7 @@ def load_data():
         .str.lower()
     )
 
-    # 🔧 FIX: student_id → student id
+    # Normalize student_id → student id
     if "student_id" in df.columns:
         df.rename(columns={"student_id": "student id"}, inplace=True)
 
@@ -96,29 +94,40 @@ if menu == "Check Result":
         else:
             st.success("✅ Result found")
 
+            # -------- STUDENT PROFILE --------
             profile_fields = [
-                "student id", "full_name", "class", "arm",
-                "gender", "date_of_birth"
+                "student id", "full_name", "class",
+                "arm", "gender", "date_of_birth"
             ]
+            profile_fields = [f for f in profile_fields if f in result.columns]
 
             profile = result[profile_fields].iloc[0].to_frame()
             profile.columns = ["Value"]
             profile.index = profile.index.str.replace("_", " ").str.title()
+
             st.subheader("👤 Student Profile")
             st.table(profile)
 
-            score_fields = [
+            # -------- ACADEMIC PERFORMANCE (SAFE FIX) --------
+            all_possible_scores = [
                 "maths", "english", "physics",
                 "chemistry", "biology",
                 "total", "average", "grade"
             ]
 
-            result[score_fields] = result[score_fields].fillna(0)
-            scores = result[score_fields].iloc[0].to_frame()
-            scores.columns = ["Score"]
-            scores.index = scores.index.str.title()
-            st.subheader("📊 Academic Performance")
-            st.table(scores)
+            score_fields = [c for c in all_possible_scores if c in result.columns]
+
+            if score_fields:
+                result[score_fields] = result[score_fields].fillna(0)
+
+                scores = result[score_fields].iloc[0].to_frame()
+                scores.columns = ["Score"]
+                scores.index = scores.index.str.replace("_", " ").str.title()
+
+                st.subheader("📊 Academic Performance")
+                st.table(scores)
+            else:
+                st.warning("⚠ No academic performance recorded for this student yet.")
 
 # -------------------------
 # ADD RESULT
@@ -181,11 +190,11 @@ elif menu == "Update Result":
     if not result.empty:
         student = result.iloc[0]
 
-        maths = st.number_input("Maths", 0, 100, int(student["maths"]))
-        english = st.number_input("English", 0, 100, int(student["english"]))
-        physics = st.number_input("Physics", 0, 100, int(student["physics"]))
-        chemistry = st.number_input("Chemistry", 0, 100, int(student["chemistry"]))
-        biology = st.number_input("Biology", 0, 100, int(student["biology"]))
+        maths = st.number_input("Maths", 0, 100, int(student.get("maths", 0)))
+        english = st.number_input("English", 0, 100, int(student.get("english", 0)))
+        physics = st.number_input("Physics", 0, 100, int(student.get("physics", 0)))
+        chemistry = st.number_input("Chemistry", 0, 100, int(student.get("chemistry", 0)))
+        biology = st.number_input("Biology", 0, 100, int(student.get("biology", 0)))
 
         if st.button("Update Result"):
             total = maths + english + physics + chemistry + biology
@@ -237,7 +246,9 @@ elif menu == "View All Results":
         st.dataframe(df, use_container_width=True)
 
 st.markdown("---")
-st.caption("© 2026 School Result Portal | Built with Streamlit")
+st.caption("© 2026 School Result Portal | Built with Streamlit")    # Normalize student_id → student id
+    
+
 
 
 
