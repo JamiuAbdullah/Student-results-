@@ -11,6 +11,17 @@ st.set_page_config(
 FILE_PATH = "School_Result_Portal_1000plus.xlsx"
 
 # -------------------------
+# Helper (VERY IMPORTANT)
+# -------------------------
+def safe_int(value):
+    try:
+        if pd.isna(value):
+            return 0
+        return int(float(value))
+    except:
+        return 0
+
+# -------------------------
 # Load and Save Functions
 # -------------------------
 def load_data():
@@ -94,13 +105,11 @@ if menu == "Check Result":
         else:
             st.success("✅ Result found")
 
-            # -------- STUDENT PROFILE --------
+            # Profile
             profile_fields = [
                 "student id", "full_name", "class",
                 "arm", "gender", "date_of_birth"
             ]
-            profile_fields = [f for f in profile_fields if f in result.columns]
-
             profile = result[profile_fields].iloc[0].to_frame()
             profile.columns = ["Value"]
             profile.index = profile.index.str.replace("_", " ").str.title()
@@ -108,26 +117,25 @@ if menu == "Check Result":
             st.subheader("👤 Student Profile")
             st.table(profile)
 
-            # -------- ACADEMIC PERFORMANCE (SAFE FIX) --------
-            all_possible_scores = [
+            # Academic performance (SAFE)
+            all_scores = [
                 "maths", "english", "physics",
                 "chemistry", "biology",
                 "total", "average", "grade"
             ]
 
-            score_fields = [c for c in all_possible_scores if c in result.columns]
+            score_fields = [c for c in all_scores if c in result.columns]
 
             if score_fields:
                 result[score_fields] = result[score_fields].fillna(0)
-
                 scores = result[score_fields].iloc[0].to_frame()
                 scores.columns = ["Score"]
-                scores.index = scores.index.str.replace("_", " ").str.title()
+                scores.index = scores.index.str.title()
 
                 st.subheader("📊 Academic Performance")
                 st.table(scores)
             else:
-                st.warning("⚠ No academic performance recorded for this student yet.")
+                st.warning("⚠ No academic performance recorded yet")
 
 # -------------------------
 # ADD RESULT
@@ -178,7 +186,7 @@ elif menu == "Add Result":
         st.success("✅ Result added successfully")
 
 # -------------------------
-# UPDATE RESULT
+# UPDATE RESULT (FIXED)
 # -------------------------
 elif menu == "Update Result":
     st.subheader("✏️ Update Student Result")
@@ -190,11 +198,11 @@ elif menu == "Update Result":
     if not result.empty:
         student = result.iloc[0]
 
-        maths = st.number_input("Maths", 0, 100, int(student.get("maths", 0)))
-        english = st.number_input("English", 0, 100, int(student.get("english", 0)))
-        physics = st.number_input("Physics", 0, 100, int(student.get("physics", 0)))
-        chemistry = st.number_input("Chemistry", 0, 100, int(student.get("chemistry", 0)))
-        biology = st.number_input("Biology", 0, 100, int(student.get("biology", 0)))
+        maths = st.number_input("Maths", 0, 100, safe_int(student.get("maths")))
+        english = st.number_input("English", 0, 100, safe_int(student.get("english")))
+        physics = st.number_input("Physics", 0, 100, safe_int(student.get("physics")))
+        chemistry = st.number_input("Chemistry", 0, 100, safe_int(student.get("chemistry")))
+        biology = st.number_input("Biology", 0, 100, safe_int(student.get("biology")))
 
         if st.button("Update Result"):
             total = maths + english + physics + chemistry + biology
@@ -239,16 +247,7 @@ elif menu == "Delete Result":
 # -------------------------
 elif menu == "View All Results":
     st.subheader("📊 All Students Results")
-
-    if df.empty:
-        st.info("No results available yet")
-    else:
-        st.dataframe(df, use_container_width=True)
+    st.dataframe(df, use_container_width=True)
 
 st.markdown("---")
-st.caption("© 2026 School Result Portal | Built with Streamlit")    # Normalize student_id → student id
-    
-
-
-
-
+st.caption("© 2026 School Result Portal | Built with Streamlit")
